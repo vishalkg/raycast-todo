@@ -67,45 +67,19 @@ Inside the add/edit form:
 curl -fsSL https://raw.githubusercontent.com/vishalkg/raycast-todo/main/install.sh | bash
 ```
 
-One command. No clone, no Node.js required. The installer:
+Downloads the latest release, imports it into Raycast, done. Open Raycast and search for **Todo**.
 
-1. Downloads the latest pre-built release from GitHub
-2. Extracts it to `~/.raycast-todo/`
-3. Enables Raycast's **Import Extension** deep-link
-4. Imports the extension into Raycast as a permanent developer extension
+**Requires**: macOS, Raycast ≥ 1.94.4, and a free Raycast account (needed to enable "Import Extension" — no Pro subscription required).
 
-No background process. No dev mode. Survives reboots. Open Raycast, search for **Todo**, and on first launch set the path to your markdown file.
+**First-time setup**: the first time you import any extension, Raycast asks you to enable "Import Extension" under Settings → Extensions → Developer. The installer opens that settings pane for you — tick the box, sign in, rerun if needed.
 
-### Prerequisites
+**Update**: rerun the same command. Pulls the newest release. Your todos are unaffected — they live at the path you configured, independent of the extension.
 
-- **macOS**
-- **Raycast ≥ 1.94.4** — the installer will prompt you to update if needed
-- A **free Raycast account** — required to enable "Import Extension". No Pro subscription needed; any email works.
+**Uninstall**: Raycast Settings → Extensions → Todo → `...` → Uninstall. Optional: `rm -rf ~/.raycast-todo`.
 
-### First-time Raycast setup
+### Build from source
 
-If this is your first imported extension, Raycast needs "Import Extension" enabled under Settings → Extensions → Developer. The installer opens that settings pane for you. Tick the box, sign in, rerun if needed.
-
-### Update
-
-```bash
-curl -fsSL https://raw.githubusercontent.com/vishalkg/raycast-todo/main/install.sh | bash
-```
-
-Same command. It downloads whatever the latest release is. Your todos are unaffected — they live in the file at the path you configured, independent of the extension.
-
-### Uninstall
-
-In Raycast: Settings → Extensions → Todo → `...` menu → Uninstall.
-Optional cleanup:
-
-```bash
-rm -rf ~/.raycast-todo
-```
-
-## Build from source
-
-If you want to run an unreleased version (a branch, a local modification, or mainline):
+For development, or to run an unreleased version:
 
 ```bash
 git clone https://github.com/vishalkg/raycast-todo.git
@@ -113,7 +87,7 @@ cd raycast-todo
 ./install-from-source.sh
 ```
 
-This requires **Node.js 18+** and builds the extension locally before importing. Use this for development; for normal use prefer the release installer above.
+Requires Node.js 18+. Builds the extension locally instead of downloading a release.
 
 ## Why this instead of Todoist / Apple Reminders / Raycast built-in?
 
