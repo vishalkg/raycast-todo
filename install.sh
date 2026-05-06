@@ -1,13 +1,23 @@
 #!/usr/bin/env bash
 # One-shot installer for the Todo Raycast extension.
 #
-# Installs the extension via Raycast's "Import Extension" feature, so it
-# becomes a permanent developer extension — no ongoing dev-mode process
-# required. Survives reboots.
+# Downloads the latest pre-built release from GitHub, extracts it to a
+# managed location, and imports it into Raycast as a permanent developer
+# extension. No Node.js, no build step, no ongoing dev process.
 #
-# Usage: ./install.sh
+# Usage:
+#   curl -fsSL https://raw.githubusercontent.com/vishalkg/raycast-todo/main/install.sh | bash
+#
+# Or clone and run locally:
+#   ./install.sh
 
 set -euo pipefail
+
+# ----- Configuration -----
+REPO="vishalkg/raycast-todo"
+INSTALL_DIR="$HOME/.raycast-todo"
+TMP_DIR="$(mktemp -d -t raycast-todo.XXXXXX)"
+trap 'rm -rf "$TMP_DIR"' EXIT
 
 # ----- Formatting -----
 RESET="$(tput sgr0 2>/dev/null || printf '')"
@@ -23,19 +33,16 @@ warn()      { printf '%s\n' "${YELLOW}! $*${RESET}"; }
 error()     { printf '%s\n' "${RED}x $*${RESET}" >&2; }
 completed() { printf '%s\n' "${GREEN}✓${RESET} $*"; }
 abort()     { error "$@"; exit 1; }
-confirm()   { read -r -p "${MAGENTA}?${RESET} $* ${BOLD}[y/N]${RESET} " yn; [[ $yn =~ ^[Yy]$ ]]; }
 
-# ----- Prerequisites -----
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-
+# ----- Platform check -----
 if [[ "$OSTYPE" != "darwin"* ]]; then
-  abort "Only macOS is supported right now. Detected: $OSTYPE"
+  abort "Only macOS is supported. Detected: $OSTYPE"
 fi
 
-command -v node >/dev/null 2>&1 || abort "Node.js is required. Install from https://nodejs.org/"
-command -v npm  >/dev/null 2>&1 || abort "npm is required (ships with Node.js)."
+command -v curl >/dev/null 2>&1  || abort "curl is required."
+command -v tar  >/dev/null 2>&1  || abort "tar is required."
 
-# Raycast app check
+# ----- Raycast check -----
 raycast_app_path() {
   [[ -d "$HOME/Applications/Raycast.app" ]] && echo "$HOME/Applications/Raycast.app" && return
   [[ -d "/Applications/Raycast.app"      ]] && echo "/Applications/Raycast.app"
@@ -46,13 +53,11 @@ if [[ -z "$RAYCAST_APP" ]]; then
   abort "Raycast.app not found. Install Raycast from https://raycast.com/ and rerun."
 fi
 
-# Raycast version check (Import Extension requires ≥ 1.94.4)
 raycast_version() {
   defaults read "$1/Contents/Info.plist" CFBundleShortVersionString 2>/dev/null
 }
 
 version_lt() {
-  # version_lt A B → returns 0 if A < B
   local a="$1" b="$2"
   local IFS=.
   read -r -a av <<<"$a"
@@ -68,33 +73,52 @@ version_lt() {
 
 RAYCAST_VER="$(raycast_version "$RAYCAST_APP" || echo "0.0.0")"
 if version_lt "$RAYCAST_VER" "1.94.4"; then
-  warn "Raycast version $RAYCAST_VER is older than 1.94.4."
-  warn 'Open Raycast → Check For Updates and update, then rerun this script.'
+  warn "Raycast $RAYCAST_VER is older than 1.94.4."
+  warn 'Please update Raycast and rerun this installer.'
   open "raycast://extensions/raycast/raycast/check-for-updates" 2>/dev/null || true
   exit 1
 fi
 
 info "Raycast $RAYCAST_VER detected."
 
-# ----- Build -----
-cd "$SCRIPT_DIR"
+# ----- Fetch latest release -----
+info "Fetching latest release metadata..."
+API_URL="https://api.github.com/repos/$REPO/releases/latest"
+RELEASE_JSON="$TMP_DIR/release.json"
 
-info "Installing npm dependencies..."
-npm install --no-audit --no-fund >/dev/null 2>&1 || abort "npm install failed. Run 'npm install' manually to see errors."
-completed "Dependencies installed."
-
-info "Building the extension..."
-npx ray build -e dist -o dist >/tmp/raycast-todo-build.log 2>&1 || {
-  cat /tmp/raycast-todo-build.log
-  abort "Build failed. See log above."
-}
-completed "Extension built."
-
-# ray build -e dist outputs to ./dist
-BUILD_DIR="$SCRIPT_DIR/dist"
-if [[ ! -d "$BUILD_DIR" ]]; then
-  abort "Expected build output at $BUILD_DIR but it doesn't exist."
+if ! curl -fsSL "$API_URL" -o "$RELEASE_JSON"; then
+  abort "Failed to fetch release info from $API_URL. Is the repo public and does it have a release?"
 fi
+
+# Extract tarball URL (first asset ending in .tar.gz)
+TARBALL_URL="$(python3 -c '
+import json, sys
+with open(sys.argv[1]) as f:
+    data = json.load(f)
+for asset in data.get("assets", []):
+    if asset["name"].endswith(".tar.gz"):
+        print(asset["browser_download_url"])
+        sys.exit(0)
+sys.exit(1)
+' "$RELEASE_JSON")" || abort "No .tar.gz asset found in the latest release."
+
+TAG_NAME="$(python3 -c '
+import json, sys
+with open(sys.argv[1]) as f:
+    print(json.load(f)["tag_name"])
+' "$RELEASE_JSON")"
+
+info "Downloading $TAG_NAME from $TARBALL_URL ..."
+TARBALL="$TMP_DIR/release.tar.gz"
+curl -fsSL "$TARBALL_URL" -o "$TARBALL" || abort "Failed to download release tarball."
+completed "Downloaded."
+
+# ----- Install into managed directory -----
+info "Extracting to $INSTALL_DIR ..."
+rm -rf "$INSTALL_DIR"
+mkdir -p "$INSTALL_DIR"
+tar -xzf "$TARBALL" -C "$INSTALL_DIR" || abort "Failed to extract tarball."
+completed "Extracted."
 
 # ----- Enable Import Extension deep-link -----
 info "Enabling Raycast's Import Extension deep-link..."
@@ -102,30 +126,24 @@ defaults write com.raycast.macos alwaysAllowCommandDeeplinking -dict-add \
   "builtin_command_developer_importExtension" -int 1 >/dev/null 2>&1 || true
 completed "Deep-link enabled."
 
-# ----- Ensure Import Extension is turned on in Raycast -----
-warn 'If "Import Extension" is not enabled in Raycast yet, enable it:'
-warn '   1. Raycast Settings → Extensions → Developer'
-warn '   2. Check the box next to "Import Extension"'
-warn '   3. Sign in with a Raycast account when prompted (free, no Pro needed).'
-warn ''
-if confirm "Open Raycast Extensions settings now to verify?"; then
-  open 'raycast://extensions/raycast/raycast-settings/extensions' || true
-  confirm "Ready to continue?"
-fi
-
-# ----- Import Extension -----
-# Build URL-encoded context: {"path":"<BUILD_DIR>","skipOnboarding":true}
-CONTEXT_JSON="{\"path\":\"$BUILD_DIR\",\"skipOnboarding\":true}"
-# URL-encode with Python (always present on macOS)
+# ----- Final import -----
+# Build URL-encoded context: {"path":"<INSTALL_DIR>","skipOnboarding":true}
+CONTEXT_JSON="{\"path\":\"$INSTALL_DIR\",\"skipOnboarding\":true}"
 ENCODED_CONTEXT="$(python3 -c "import urllib.parse,sys; print(urllib.parse.quote(sys.argv[1]))" "$CONTEXT_JSON")"
 
 info "Importing extension into Raycast..."
 open "raycast://extensions/raycast/developer/import-extension?context=${ENCODED_CONTEXT}" || \
-  abort "Failed to trigger Raycast Import Extension."
+  abort "Failed to open Raycast Import Extension."
 
-completed "Todo extension installed."
+completed "Todo extension installed (${TAG_NAME})."
 echo ""
-echo "Open Raycast and search for 'Todo'. On first launch you'll be asked to"
-echo "set the path to your markdown file (e.g. ~/Documents/todo.md)."
+echo "${BOLD}Next steps:${RESET}"
+echo "  1. If prompted, enable \"Import Extension\" in Raycast:"
+echo "     Settings → Extensions → Developer → check the box."
+echo "     Sign in with a free Raycast account if prompted."
+echo "  2. Open Raycast and search for 'Todo'."
+echo "  3. On first launch, set the path to your markdown file."
 echo ""
-echo "To update later: git pull && ./install.sh"
+echo "To update later: rerun this installer."
+echo "To uninstall: Raycast Settings → Extensions → Todo → ... → Uninstall,"
+echo "              then rm -rf $INSTALL_DIR"

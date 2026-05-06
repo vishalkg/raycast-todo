@@ -1,0 +1,48 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write  # needed to create releases and upload assets
+
+jobs:
+  build-and-release:
+    runs-on: macos-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci --no-audit --no-fund
+
+      - name: Build extension
+        run: npx ray build -e dist -o dist
+
+      - name: Package build output
+        run: |
+          cd dist
+          tar -czf ../raycast-todo-${{ github.ref_name }}.tar.gz .
+          cd ..
+          ls -la raycast-todo-${{ github.ref_name }}.tar.gz
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: raycast-todo-${{ github.ref_name }}.tar.gz
+          generate_release_notes: true
+          fail_on_unmatched_files: true
+          body: |
+            Install with:
+            ```bash
+            curl -fsSL https://raw.githubusercontent.com/${{ github.repository }}/main/install.sh | bash
+            ```
+            Or download the tarball directly and extract to a folder Raycast can import.
