@@ -30,13 +30,16 @@ Anything the extension produces is valid markdown, so the file renders correctly
 
 ## Configuration
 
-Open Raycast → Preferences → Extensions → Todo, and set **Todo File Path**.
+On first launch, Raycast will prompt you to set **Todo File Path** — the absolute path to the markdown file where your todos will be stored.
 
-- Default: `~/Documents/todo.md`
-- Supports `~` for home directory.
-- If the file doesn't exist when you first use the extension, it will be created (along with any missing parent directories).
+- Supports `~` for home directory (e.g. `~/Documents/todo.md`)
+- If the file doesn't exist, it will be created (along with any missing parent directories).
+- Change it any time via Raycast → Preferences → Extensions → Todo. No data migration needed — just move the file.
 
-Change it any time to point at a different location — no data migration needed, just move the file.
+Common choices:
+- `~/Documents/todo.md`
+- `~/Dropbox/todo.md` (if you want cross-Mac sync via Dropbox)
+- `~/vault/todo.md` (inside an Obsidian vault — todos render as native checklist items)
 
 ## Keyboard shortcuts
 

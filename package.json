@@ -22,8 +22,7 @@
       "title": "Todo File Path",
       "description": "Absolute path to the markdown file that stores your todos. Supports ~ for home directory. If the file does not exist, it will be created.",
       "type": "textfield",
-      "required": false,
-      "default": "~/Documents/todo.md"
+      "required": true
     }
   ],
   "dependencies": {

@@ -10,12 +10,9 @@ type Preferences = {
 
 const NOTE_INDENT = "    "; // 4 spaces
 
-// Expand a user-entered path: handle ~, relative paths, and create parents if needed.
+// Expand a user-entered path: handle ~, relative paths.
 function resolveTodoPath(raw: string): string {
   let p = (raw || "").trim();
-  if (!p) {
-    p = path.join(os.homedir(), "Documents", "todo.md");
-  }
   if (p.startsWith("~")) {
     p = path.join(os.homedir(), p.slice(1));
   }
