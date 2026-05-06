@@ -1,0 +1,47 @@
+{
+  "$schema": "https://www.raycast.com/schemas/extension.json",
+  "name": "raycast-todo",
+  "title": "Todo",
+  "description": "A local markdown-backed todo list for Raycast. Add, toggle, and annotate tasks with notes, all stored in a single configurable markdown file.",
+  "icon": "icon.png",
+  "author": "vishalkg",
+  "license": "MIT",
+  "categories": ["Productivity"],
+  "platforms": ["macOS", "Windows"],
+  "commands": [
+    {
+      "name": "todo",
+      "title": "Todo",
+      "description": "View, add, edit, and toggle todos",
+      "mode": "view"
+    }
+  ],
+  "preferences": [
+    {
+      "name": "todoFilePath",
+      "title": "Todo File Path",
+      "description": "Absolute path to the markdown file that stores your todos. Supports ~ for home directory. If the file does not exist, it will be created.",
+      "type": "textfield",
+      "required": false,
+      "default": "~/Documents/todo.md"
+    }
+  ],
+  "dependencies": {
+    "@raycast/api": "^1.84.0",
+    "@raycast/utils": "^1.17.0"
+  },
+  "devDependencies": {
+    "@raycast/eslint-config": "^1.0.11",
+    "@types/node": "20.8.10",
+    "@types/react": "^19.0.0",
+    "eslint": "^8.57.0",
+    "prettier": "^3.3.3",
+    "typescript": "^5.4.5"
+  },
+  "scripts": {
+    "build": "ray build -e dist",
+    "dev": "ray develop",
+    "lint": "ray lint",
+    "fix-lint": "ray lint --fix"
+  }
+}
