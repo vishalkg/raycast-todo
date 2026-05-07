@@ -10,21 +10,27 @@ No cloud. No account. No lock-in. Your todos are plain text on disk.
 - ⚡ **Fast capture** — `⌘N` to add a task with optional multi-line notes.
 - ✅ **Keyboard-first list** — arrow-navigate, `Enter` to toggle done, `⌘E` to edit.
 - 🗒 **Notes per task** — each task can carry arbitrary multi-line context, rendered as sub-bullets.
+- 🌲 **Sub-tasks** — parent tasks can have their own nested to-dos, each with independent done/open state. Parent shows `n/m` progress.
 - 🔍 **Live filter** — type in the Raycast search bar to filter across all tasks and notes.
 - 🔧 **Configurable file path** — point it at any location you want (Documents, iCloud, Obsidian vault, Dropbox, etc.).
 - 🖥 **Works on macOS and Windows** — anywhere Raycast runs.
 
 ## File format
 
-Tasks are plain [GitHub-flavored markdown](https://github.github.com/gfm/#task-list-items-extension-) checklist items. Notes are indented sub-bullets under a task.
+Tasks are plain [GitHub-flavored markdown](https://github.github.com/gfm/#task-list-items-extension-) checklist items. Notes and sub-tasks are indented lines under a parent.
 
 ```markdown
-- [ ] Review PR
-    - focus on the auth changes
-    - check error handling path
+- [ ] Ship v0.2
+    - cut tag, run CI
+    - [ ] write release notes
+    - [x] update screenshot
 - [x] Buy groceries
-- [ ] Plain task without notes
+- [ ] Plain task without notes or sub-tasks
 ```
+
+Indented lines under a task are either:
+- `- note text` — plain note (no state)
+- `- [ ] sub-task` / `- [x] sub-task` — a sub-task with its own done/open state
 
 Anything the extension produces is valid markdown, so the file renders correctly in Obsidian, GitHub, Typora, VS Code preview, or any other viewer.
 
@@ -47,19 +53,38 @@ Inside the **Todo** command:
 
 | Shortcut | Action |
 |----------|--------|
-| `Enter` | Toggle task (done ↔ open) |
+| `Enter` | Toggle task / sub-task (done ↔ open) |
 | `⌘N` | Add new task |
-| `⌘E` | Edit task text and notes |
-| `⌃X` | Delete task |
+| `⌘⇧N` | Add sub-task under the selected parent |
+| `⌘E` | Edit task text, notes, and sub-tasks |
+| `⌃X` | Delete task or sub-task |
 | `⌘C` | Copy task text |
 | `⌘,` | Open extension preferences |
 
-Inside the add/edit form:
+Inside any form:
 
 | Shortcut | Action |
 |----------|--------|
 | `⌘↵` | Submit |
 | `Esc` | Cancel |
+
+### Sub-tasks inside the edit form
+
+The Edit Task form exposes sub-tasks as a textarea you can bulk-edit:
+
+```
+[ ] write release notes
+[x] update screenshot
+[ ] test installer
+```
+
+- `[ ] xxx` — open sub-task
+- `[x] xxx` — done sub-task (case-insensitive)
+- Plain text (no checkbox) — treated as a new open sub-task
+- Empty lines are skipped
+- Reorder, rename, add, or delete by editing the lines directly
+
+For single changes, the per-row actions (`Enter` to toggle, `⌘E` to rename, `⌃X` to delete) are faster.
 
 ## Install
 
